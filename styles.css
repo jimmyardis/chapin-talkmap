@@ -477,6 +477,34 @@ html, body {
   padding-top: 6px;
 }
 
+/* ---------- Cinematic mode (Chapin floating in space) ---------- */
+body.cinematic {
+  background: #000000;
+}
+
+body.cinematic .overlay,
+body.cinematic .legend,
+body.cinematic .attribution,
+body.cinematic .controls,
+body.cinematic .voice-cluster,
+body.cinematic .time-slider {
+  opacity: 0.18;
+  transition: opacity 0.4s ease;
+}
+
+body.cinematic .overlay:hover,
+body.cinematic .legend:hover,
+body.cinematic .controls:hover,
+body.cinematic .voice-cluster:hover,
+body.cinematic .time-slider:hover {
+  opacity: 1;
+}
+
+/* Cinematic button is always visible at full opacity */
+body.cinematic #toggleCinematic {
+  opacity: 1 !important;
+}
+
 /* ---------- Time slider (year scrubber) ---------- */
 .time-slider {
   position: absolute;

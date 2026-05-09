@@ -493,6 +493,144 @@ document.getElementById('cycleLight').addEventListener('click', (e) => {
   catch (err) {}
 });
 
+// =============================================================
+// 11. STYLE CYCLE — Standard / Satellite / Dark
+// =============================================================
+const STYLES = [
+  { id: 'mapbox://styles/mapbox/standard',          label: 'standard'  },
+  { id: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'satellite' },
+  { id: 'mapbox://styles/mapbox/dark-v11',          label: 'dark'      },
+];
+let styleIndex = 0;
+const cycleStyleBtn = document.getElementById('cycleStyle');
+if (cycleStyleBtn) {
+  cycleStyleBtn.addEventListener('click', (e) => {
+    styleIndex = (styleIndex + 1) % STYLES.length;
+    const next = STYLES[styleIndex];
+    e.target.textContent = `Style: ${next.label}`;
+    map.setStyle(next.id);
+    // Re-add data layers after style swap (Mapbox clears them)
+    map.once('style.load', () => {
+      try { map.setConfigProperty('basemap', 'lightPreset', LIGHT_PRESETS[lightIndex]); } catch (err) {}
+      reAddDataLayers();
+    });
+  });
+}
+
+// =============================================================
+// 12. CINEMATIC MODE — Chapin floating in space
+// =============================================================
+let cinematicMode = false;
+const cinematicBtn = document.getElementById('toggleCinematic');
+if (cinematicBtn) {
+  cinematicBtn.addEventListener('click', (e) => {
+    cinematicMode = !cinematicMode;
+    document.body.classList.toggle('cinematic', cinematicMode);
+    if (cinematicMode) {
+      // Globe projection + space fog + dark style
+      try { map.setProjection('globe'); } catch (err) {}
+      try {
+        map.setFog({
+          'color': 'rgba(10, 10, 14, 1)',
+          'high-color': '#0a0a14',
+          'space-color': '#000000',
+          'horizon-blend': 0.04,
+          'star-intensity': 0.85,
+        });
+      } catch (err) {}
+      // Tilt up dramatically for the planet-from-orbit feel
+      map.easeTo({ pitch: 65, bearing: 0, duration: 2400, essential: true });
+      e.target.textContent = '✦ Exit cinematic';
+    } else {
+      try { map.setProjection('mercator'); } catch (err) {}
+      try { map.setFog(null); } catch (err) {}
+      map.easeTo({ pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING, duration: 1600, essential: true });
+      e.target.textContent = '✦ Cinematic';
+    }
+  });
+}
+
+// Helper to re-add Census + place layers after a style swap
+function reAddDataLayers() {
+  // Re-add Census source + layers
+  if (!map.getSource('chapin-area-tracts')) {
+    try {
+      map.addSource('chapin-area-tracts', {
+        type: 'geojson',
+        data: CENSUS_GEOJSON_PATH,
+        promoteId: 'GEOID',
+      });
+      map.addLayer({
+        id: 'census-fill',
+        type: 'fill',
+        source: 'chapin-area-tracts',
+        slot: 'bottom',
+        paint: {
+          'fill-color': buildFillColorExpression(currentMetric, currentYear),
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false], 0.85,
+            0.65,
+          ],
+        },
+      });
+      map.addLayer({
+        id: 'census-outline',
+        type: 'line',
+        source: 'chapin-area-tracts',
+        slot: 'middle',
+        paint: {
+          'line-color': 'rgba(255, 255, 255, 0.7)',
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false], 2.5,
+            0.6,
+          ],
+        },
+      });
+    } catch (err) { console.error('Re-add Census failed:', err); }
+  }
+
+  // Re-add places source + layers
+  if (!map.getSource('chapin-places')) {
+    try {
+      map.addSource('chapin-places', { type: 'geojson', data: PLACES_GEOJSON_PATH });
+      map.addLayer({
+        id: 'zip-fill', type: 'fill', source: 'chapin-places',
+        filter: ['==', ['get', 'kind'], 'zip'], slot: 'middle',
+        paint: { 'fill-color': '#c9a55a', 'fill-opacity': 0.07 },
+      });
+      map.addLayer({
+        id: 'zip-outline', type: 'line', source: 'chapin-places',
+        filter: ['==', ['get', 'kind'], 'zip'], slot: 'top',
+        paint: { 'line-color': '#c9a55a', 'line-width': 2, 'line-dasharray': [3, 2] },
+      });
+      map.addLayer({
+        id: 'place-outline', type: 'line', source: 'chapin-places',
+        filter: ['any', ['==', ['get', 'kind'], 'incorporated_town'], ['==', ['get', 'kind'], 'cdp']],
+        slot: 'top',
+        paint: { 'line-color': '#a07d2e', 'line-width': 2.4 },
+      });
+      map.addLayer({
+        id: 'colloquial-points', type: 'circle', source: 'chapin-places',
+        filter: ['==', ['get', 'kind'], 'colloquial'], slot: 'top',
+        paint: { 'circle-radius': 7, 'circle-color': '#c9a55a', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+      });
+      map.addLayer({
+        id: 'place-labels', type: 'symbol', source: 'chapin-places',
+        filter: ['!=', ['get', 'kind'], 'zip'], slot: 'top',
+        layout: {
+          'text-field': ['get', 'display_name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 14, 14],
+          'text-offset': [0, 1.0], 'text-anchor': 'top', 'text-allow-overlap': false,
+        },
+        paint: { 'text-color': '#5a4015', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 },
+      });
+    } catch (err) { console.error('Re-add places failed:', err); }
+  }
+}
+
 let placesVisible = true;
 const placesBtn = document.getElementById('togglePlaces');
 if (placesBtn) {
