@@ -8,7 +8,7 @@
 // =============================================================
 // 1. MAPBOX TOKEN
 // =============================================================
-mapboxgl.accessToken = 'pk.eyJ1IjoiamltbXlhcmRpcyIsImEiOiJjbW93d3EzOGowaHBiMnJvZngweWIxZXN6In0.DGI7a-dUV1fphfE4uP-HwQ';
+mapboxgl.accessToken = 'pk.eyJ1IjoiamltbXlhcmRpcyIsImEiOiJjbW95cDhiOWEwZGNwMnNxNjU5MnNybGdzIn0.kXOm1Xhn4MGll3Z9PNqmbA';
 
 // =============================================================
 // 2. CHAPIN, SOUTH CAROLINA
