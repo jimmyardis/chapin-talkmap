@@ -129,16 +129,47 @@ const METRICS = {
     legendLabels: ['0%', '25%', '50%', '100%'],
     formatPopup: v => v == null ? 'n/a' : `${v.toFixed(0)}%`,
   },
+
+  // Year-aware metric: choropleth recolors as the time slider scrubs
+  population_by_year: {
+    label: 'Population (drag time slider)',
+    isYearAware: true,
+    years: [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+    defaultYear: 2022,
+    propertyTemplate: 'pop_{year}',
+    nullColor: 'rgba(180, 180, 180, 0.55)',
+    nullLabel: 'No data for this year',
+    stops: [
+      [   0, '#fff5eb'],
+      [1000, '#fdd0a2'],
+      [3000, '#fd8d3c'],
+      [5000, '#d94801'],
+      [8000, '#7f2704'],
+    ],
+    legendLabels: ['0', '1k', '3k', '5k+'],
+    formatPopup: v => v == null ? 'no data' : Number(v).toLocaleString(),
+  },
 };
 
 const DEFAULT_METRIC = 'growth_pct';
 let currentMetric = DEFAULT_METRIC;
+let currentYear = null;  // null when current metric isn't year-aware
 
-function buildFillColorExpression(metricKey) {
+function getActiveProperty(metricKey, year = null) {
   const m = METRICS[metricKey];
-  const interpolation = ['interpolate', ['linear'], ['coalesce', ['get', m.property], 0]];
+  if (m.isYearAware && year != null) return m.propertyTemplate.replace('{year}', year);
+  return m.property;
+}
+
+function buildFillColorExpression(metricKey, year = null) {
+  const m = METRICS[metricKey];
+  const property = getActiveProperty(metricKey, year);
+  const interpolation = ['interpolate', ['linear'], ['coalesce', ['get', property], 0]];
   for (const [stop, color] of m.stops) interpolation.push(stop, color);
-  return ['case', m.nullCheck, m.nullColor, interpolation];
+  const nullCheck = m.isYearAware
+    ? ['==', ['get', property], null]
+    : m.nullCheck;
+  return ['case', nullCheck, m.nullColor, interpolation];
 }
 
 function gradientCss(metricKey) {
@@ -166,10 +197,51 @@ function updateLegend(metricKey) {
 function setMetric(metricKey) {
   if (!METRICS[metricKey]) return;
   currentMetric = metricKey;
+  const m = METRICS[metricKey];
+
+  if (m.isYearAware) {
+    if (currentYear == null || !m.years.includes(currentYear)) {
+      currentYear = m.defaultYear;
+    }
+    showTimeSlider(m, currentYear);
+  } else {
+    currentYear = null;
+    hideTimeSlider();
+  }
+
   if (map.getLayer('census-fill')) {
-    map.setPaintProperty('census-fill', 'fill-color', buildFillColorExpression(metricKey));
+    map.setPaintProperty(
+      'census-fill',
+      'fill-color',
+      buildFillColorExpression(metricKey, currentYear)
+    );
   }
   updateLegend(metricKey);
+}
+
+function showTimeSlider(metric, year) {
+  const slider = document.getElementById('timeSlider');
+  if (!slider) return;
+  const range = slider.querySelector('#yearRange');
+  const yearLabel = slider.querySelector('.time-slider-year');
+  const boundsEls = slider.querySelectorAll('.time-slider-bounds span');
+
+  if (range) {
+    range.min = metric.years[0];
+    range.max = metric.years[metric.years.length - 1];
+    range.step = 1;
+    range.value = year;
+  }
+  if (yearLabel) yearLabel.textContent = year;
+  if (boundsEls.length >= 2) {
+    boundsEls[0].textContent = metric.years[0];
+    boundsEls[1].textContent = metric.years[metric.years.length - 1];
+  }
+  slider.classList.remove('hidden');
+}
+
+function hideTimeSlider() {
+  document.getElementById('timeSlider')?.classList.add('hidden');
 }
 
 // =============================================================
@@ -442,6 +514,24 @@ if (metricSelector) {
     `<option value="${key}"${key === DEFAULT_METRIC ? ' selected' : ''}>${METRICS[key].label}</option>`
   ).join('');
   metricSelector.addEventListener('change', (e) => setMetric(e.target.value));
+}
+
+// Time slider — drag to scrub years on year-aware metrics
+const yearRange = document.getElementById('yearRange');
+if (yearRange) {
+  yearRange.addEventListener('input', (e) => {
+    const year = parseInt(e.target.value, 10);
+    currentYear = year;
+    const yearLabel = document.querySelector('.time-slider-year');
+    if (yearLabel) yearLabel.textContent = year;
+    if (map.getLayer('census-fill')) {
+      map.setPaintProperty(
+        'census-fill',
+        'fill-color',
+        buildFillColorExpression(currentMetric, currentYear)
+      );
+    }
+  });
 }
 
 // Initialize legend on load

@@ -71,6 +71,19 @@
     <div class="legend-source">Census Bureau, decennial 2010 + 2020 plus ACS 2018-2022. Lexington &amp; Richland Counties, SC. Place boundaries: TIGER. Colloquial centroids approximate.</div>
   </div>
 
+  <!-- Time slider (only visible when a year-aware metric is selected) -->
+  <div id="timeSlider" class="time-slider hidden">
+    <div class="time-slider-label">
+      <span class="time-slider-prefix">Year</span>
+      <span class="time-slider-year">2022</span>
+    </div>
+    <input type="range" id="yearRange" min="2014" max="2022" value="2022" step="1" aria-label="Year">
+    <div class="time-slider-bounds">
+      <span>2014</span>
+      <span>2022</span>
+    </div>
+  </div>
+
   <!-- Voice agent cluster (bottom-center) -->
   <div class="voice-cluster">
     <div id="transcript" class="transcript"></div>
