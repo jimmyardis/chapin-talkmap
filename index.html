@@ -22,18 +22,21 @@
   <header class="overlay">
     <h1>The Chapin Map</h1>
     <p class="subtitle">A voice-driven portrait of Chapin, South Carolina</p>
-    <p class="phase-tag">Session 4 &middot; Census growth + Place boundaries</p>
+    <p class="phase-tag">Session 6 &middot; Demographics</p>
   </header>
 
   <div class="controls">
+    <div class="metric-selector-wrap">
+      <label class="metric-selector-label" for="metricSelector">View by</label>
+      <select id="metricSelector" class="metric-selector"></select>
+    </div>
+    <button id="togglePlaces" title="Show or hide place boundaries (towns, CDPs, ZIP 29036)">Hide Places</button>
     <button id="resetView" title="Return to default view of Chapin">Reset view</button>
     <button id="toggle3D" title="Switch between 3D and top-down view">Toggle 3D</button>
     <button id="cycleLight" title="Cycle through day, dusk, dawn, night">Lighting: day</button>
-    <button id="toggleCensus" title="Show or hide Census 2010-2020 growth choropleth">Hide Census</button>
-    <button id="togglePlaces" title="Show or hide place boundaries (towns, CDPs, ZIP 29036)">Hide Places</button>
   </div>
 
-  <!-- Census legend (bottom-right) -->
+  <!-- Legend (bottom-right) — title + gradient swap based on selected metric -->
   <div id="legend" class="legend">
     <div class="legend-title">Population growth, 2010 &rarr; 2020</div>
     <div class="legend-bar">
@@ -47,7 +50,7 @@
     </div>
     <div class="legend-extra">
       <span class="swatch new-tract"></span>
-      <span>New tract since 2010 (boundary changed)</span>
+      <span class="legend-null-label">New tract since 2010 (boundary changed)</span>
     </div>
 
     <div class="legend-section-divider"></div>
@@ -65,7 +68,7 @@
       <span>Colloquial place (Ballentine, White Rock)</span>
     </div>
 
-    <div class="legend-source">Census Bureau, decennial 2010 + 2020. Lexington &amp; Richland Counties, SC. Place boundaries: TIGER. Colloquial centroids approximate.</div>
+    <div class="legend-source">Census Bureau, decennial 2010 + 2020 plus ACS 2018-2022. Lexington &amp; Richland Counties, SC. Place boundaries: TIGER. Colloquial centroids approximate.</div>
   </div>
 
   <!-- Voice agent cluster (bottom-center) -->

@@ -111,6 +111,54 @@ html, body {
   transform: translateY(0);
 }
 
+/* ---------- Metric selector dropdown (top-right cluster) ---------- */
+.metric-selector-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-radius: 4px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+  padding: 8px 12px 10px;
+  min-width: 220px;
+}
+
+.metric-selector-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: #1a4d8f;
+  font-family: 'Inter', sans-serif;
+}
+
+.metric-selector {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 0 0 0;
+  background: transparent;
+  border: none;
+  color: #0a0a0a;
+  cursor: pointer;
+  letter-spacing: -0.005em;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%3E%3Cpath%20fill%3D%22%231a4d8f%22%20d%3D%22M0%200l5%206%205-6z%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  padding-right: 18px;
+}
+
+.metric-selector:focus {
+  outline: 2px solid #1a4d8f;
+  outline-offset: 2px;
+}
+
 /* ---------- Attribution footer (bottom-left) ---------- */
 .attribution {
   position: absolute;
@@ -461,7 +509,30 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #1a4d8f;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.tract-county .ga-tag {
+  display: inline-block;
+  background: #c9a55a;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  margin-left: 4px;
+}
+
+.tract-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+  row-gap: 4px;
+  margin-bottom: 4px;
+}
+
+.tract-stat-grid .tract-stat {
+  margin-bottom: 0;
 }
 
 .tract-stat {
