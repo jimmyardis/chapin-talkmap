@@ -678,6 +678,132 @@ window.addEventListener('DOMContentLoaded', () => updateLegend(DEFAULT_METRIC));
 // =============================================================
 // 11. ERROR HANDLING (token missing nudge)
 // =============================================================
+// =============================================================
+// 13. VOICE CONTROL API — exposed as window.chapinMap
+// -------------------------------------------------------------
+// voice.js calls these when the agent invokes a client-side tool.
+// =============================================================
+const FLY_TARGETS = {
+  'chapin':                  { center: [-81.3528, 34.1654], zoom: 13,  pitch: 50, bearing:   0 },
+  'chapin town hall':        { center: [-81.3527, 34.1654], zoom: 15,  pitch: 60, bearing:   0 },
+  'chapin town':             { center: [-81.3527, 34.1654], zoom: 14,  pitch: 55, bearing:   0 },
+  'chapin high school':      { center: [-81.3478, 34.1611], zoom: 15,  pitch: 60, bearing:  30 },
+  'chapin high':             { center: [-81.3478, 34.1611], zoom: 15,  pitch: 60, bearing:  30 },
+  'lake murray dam':         { center: [-81.2128, 34.0523], zoom: 14,  pitch: 65, bearing:  90 },
+  'saluda dam':              { center: [-81.2128, 34.0523], zoom: 14,  pitch: 65, bearing:  90 },
+  'crooked creek park':      { center: [-81.3484, 34.1789], zoom: 15,  pitch: 60, bearing:   0 },
+  'irmo':                    { center: [-81.180,  34.090],  zoom: 13,  pitch: 50, bearing:   0 },
+  'ballentine':              { center: [-81.282,  34.118],  zoom: 14,  pitch: 55, bearing:   0 },
+  'white rock':              { center: [-81.222,  34.137],  zoom: 14,  pitch: 55, bearing:   0 },
+  'lake murray':             { center: [-81.32,   34.05],   zoom: 11,  pitch: 30, bearing:   0 },
+  'lake murray of richland': { center: [-81.27,   34.10],   zoom: 13,  pitch: 50, bearing:   0 },
+  'greater chapin':          { center: [-81.30,   34.13],   zoom: 12,  pitch: 40, bearing:   0 },
+  'columbia':                { center: [-81.034,  34.000],  zoom: 11,  pitch: 40, bearing:   0 },
+  'lexington county':        { center: [-81.24,   33.91],   zoom: 10,  pitch: 30, bearing:   0 },
+  'lexington':               { center: [-81.24,   33.91],   zoom: 10,  pitch: 30, bearing:   0 },
+  'richland county':         { center: [-80.88,   34.04],   zoom: 10,  pitch: 30, bearing:   0 },
+  'richland':                { center: [-80.88,   34.04],   zoom: 10,  pitch: 30, bearing:   0 },
+  'home':                    { center: CHAPIN_CENTER,        zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING },
+  'reset':                   { center: CHAPIN_CENTER,        zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING },
+  'default':                 { center: CHAPIN_CENTER,        zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING },
+};
+
+window.chapinMap = {
+  flyTo(placeName) {
+    if (!placeName) return { success: false, error: 'Need a place name.' };
+    const key = String(placeName).toLowerCase().trim();
+
+    let target = FLY_TARGETS[key];
+    if (!target) {
+      const matchedKey = Object.keys(FLY_TARGETS).find(k => key.includes(k) || k.includes(key));
+      if (matchedKey) target = FLY_TARGETS[matchedKey];
+    }
+
+    if (!target) {
+      return {
+        success: false,
+        error: `Don't know where "${placeName}" is. Try Chapin, Irmo, White Rock, Ballentine, Lake Murray Dam, Greater Chapin, Lexington County, or Richland County.`,
+      };
+    }
+
+    map.flyTo({ ...target, duration: 2400, essential: true });
+    return { success: true, flew_to: placeName, center: target.center, zoom: target.zoom };
+  },
+
+  setMetric(metricKey) {
+    if (!METRICS[metricKey]) {
+      return {
+        success: false,
+        error: `Unknown metric "${metricKey}". Available: ${Object.keys(METRICS).join(', ')}.`,
+      };
+    }
+    setMetric(metricKey);
+    const sel = document.getElementById('metricSelector');
+    if (sel) sel.value = metricKey;
+    return { success: true, metric: metricKey, label: METRICS[metricKey].label };
+  },
+
+  setYear(year) {
+    const y = parseInt(year, 10);
+    if (isNaN(y)) return { success: false, error: 'Year must be a number.' };
+
+    const m = METRICS[currentMetric];
+    if (!m?.isYearAware) {
+      setMetric('population_by_year');
+      const sel = document.getElementById('metricSelector');
+      if (sel) sel.value = 'population_by_year';
+    }
+
+    const yrs = METRICS.population_by_year.years;
+    const clamped = Math.max(yrs[0], Math.min(yrs[yrs.length - 1], y));
+    currentYear = clamped;
+
+    const range = document.getElementById('yearRange');
+    if (range) range.value = clamped;
+    const yearLabel = document.querySelector('.time-slider-year');
+    if (yearLabel) yearLabel.textContent = clamped;
+
+    if (map.getLayer('census-fill')) {
+      map.setPaintProperty('census-fill', 'fill-color', buildFillColorExpression(currentMetric, clamped));
+    }
+    return { success: true, year: clamped };
+  },
+
+  toggleLayer(layerName) {
+    const l = String(layerName || '').toLowerCase().trim();
+    if (l.includes('place')) {
+      document.getElementById('togglePlaces')?.click();
+      return { success: true, toggled: 'places' };
+    }
+    if (l.includes('cinematic') || l.includes('space')) {
+      document.getElementById('toggleCinematic')?.click();
+      return { success: true, toggled: 'cinematic' };
+    }
+    if (l.includes('3d') || l.includes('2d')) {
+      document.getElementById('toggle3D')?.click();
+      return { success: true, toggled: '3d' };
+    }
+    if (l.includes('style') || l.includes('satellite') || l.includes('dark') || l.includes('basemap')) {
+      document.getElementById('cycleStyle')?.click();
+      return { success: true, toggled: 'style' };
+    }
+    return { success: false, error: `Unknown layer "${layerName}". Try: places, cinematic, 3d, style.` };
+  },
+
+  reset() {
+    map.flyTo({
+      center: CHAPIN_CENTER, zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING,
+      duration: 1800, essential: true,
+    });
+    return { success: true };
+  },
+};
+
+console.log('🎙️  Voice control API ready (window.chapinMap).');
+
+// =============================================================
+// 14. ERROR HANDLING (token missing nudge)
+// =============================================================
 map.on('error', (err) => {
   if (mapboxgl.accessToken === 'PASTE_YOUR_MAPBOX_TOKEN_HERE') {
     document.body.innerHTML = `

@@ -186,6 +186,34 @@ const TOOLS = {
       ? { error: `No data for county "${county}".` }
       : { years: result };
   },
+
+  // ============================================================
+  // CLIENT-SIDE MAP CONTROL TOOLS (Session 9)
+  // ------------------------------------------------------------
+  // These don't have a Server URL in Vapi. Vapi sends the call
+  // to the client, we execute on the map, return a confirmation.
+  // Voice agent says "flying you to White Rock" while the map flies.
+  // ============================================================
+  fly_to({ place, target, location }) {
+    const p = place || target || location;
+    return window.chapinMap?.flyTo?.(p) ?? { error: 'Map control not initialized.' };
+  },
+
+  set_metric({ metric }) {
+    return window.chapinMap?.setMetric?.(metric) ?? { error: 'Map control not initialized.' };
+  },
+
+  scrub_year({ year }) {
+    return window.chapinMap?.setYear?.(year) ?? { error: 'Map control not initialized.' };
+  },
+
+  toggle_layer({ layer }) {
+    return window.chapinMap?.toggleLayer?.(layer) ?? { error: 'Map control not initialized.' };
+  },
+
+  reset_view() {
+    return window.chapinMap?.reset?.() ?? { error: 'Map control not initialized.' };
+  },
 };
 
 // =============================================================
