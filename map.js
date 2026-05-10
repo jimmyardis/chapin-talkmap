@@ -590,7 +590,14 @@ if (cinematicBtn) {
       if (map.getLayer('cinematic-mask'))  map.setLayoutProperty('cinematic-mask',  'visibility', 'visible');
       if (map.getLayer('cinematic-glow'))  map.setLayoutProperty('cinematic-glow',  'visibility', 'visible');
 
-      // 2. Globe projection + space fog + stars
+      // 2. Hide basemap labels — POIs, road names, highway shields, place names —
+      //    so the masked-out area is pure dark space without sign clutter
+      try { map.setConfigProperty('basemap', 'showPointOfInterestLabels', false); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showPlaceLabels',           false); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showRoadLabels',            false); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showTransitLabels',         false); } catch (err) {}
+
+      // 3. Globe projection + space fog + stars
       try { map.setProjection('globe'); } catch (err) {}
       try {
         map.setFog({
@@ -602,7 +609,7 @@ if (cinematicBtn) {
         });
       } catch (err) {}
 
-      // 3. Fly to fit Greater Chapin in viewport with dramatic tilt
+      // 4. Fly to fit Greater Chapin in viewport with dramatic tilt
       map.fitBounds(GREATER_CHAPIN_BOUNDS, {
         padding: { top: 80, bottom: 120, left: 80, right: 80 },
         pitch: 55,
@@ -616,6 +623,12 @@ if (cinematicBtn) {
       // Hide the clip layers
       if (map.getLayer('cinematic-mask')) map.setLayoutProperty('cinematic-mask', 'visibility', 'none');
       if (map.getLayer('cinematic-glow')) map.setLayoutProperty('cinematic-glow', 'visibility', 'none');
+
+      // Restore basemap labels
+      try { map.setConfigProperty('basemap', 'showPointOfInterestLabels', true); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showPlaceLabels',           true); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showRoadLabels',            true); } catch (err) {}
+      try { map.setConfigProperty('basemap', 'showTransitLabels',         true); } catch (err) {}
 
       // Reset projection + fog
       try { map.setProjection('mercator'); } catch (err) {}
