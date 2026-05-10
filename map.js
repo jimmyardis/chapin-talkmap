@@ -731,16 +731,42 @@ window.chapinMap = {
   },
 
   setMetric(metricKey) {
-    if (!METRICS[metricKey]) {
+    // Aliases — map natural language to actual metric keys
+    const aliases = {
+      'race':                'pct_nonwhite',
+      'racial':              'pct_nonwhite',
+      'racial composition':  'pct_nonwhite',
+      'diversity':           'pct_nonwhite',
+      'demographics':        'pct_nonwhite',
+      'income':              'median_income',
+      'household income':    'median_income',
+      'wealth':              'median_income',
+      'age':                 'median_age',
+      'median age':          'median_age',
+      'density':             'density_per_sqkm',
+      'population density':  'density_per_sqkm',
+      'growth':              'growth_pct',
+      'population growth':   'growth_pct',
+      'population':          'population_by_year',
+      'population by year':  'population_by_year',
+      'time':                'population_by_year',
+      'over time':           'population_by_year',
+      'annual':              'population_by_year',
+      'history':             'population_by_year',
+    };
+    const lower = String(metricKey || '').toLowerCase().trim();
+    const resolved = METRICS[lower] ? lower : (aliases[lower] || metricKey);
+
+    if (!METRICS[resolved]) {
       return {
         success: false,
-        error: `Unknown metric "${metricKey}". Available: ${Object.keys(METRICS).join(', ')}.`,
+        error: `Unknown metric "${metricKey}". Try: race, income, age, density, growth, or population (over time).`,
       };
     }
-    setMetric(metricKey);
+    setMetric(resolved);
     const sel = document.getElementById('metricSelector');
-    if (sel) sel.value = metricKey;
-    return { success: true, metric: metricKey, label: METRICS[metricKey].label };
+    if (sel) sel.value = resolved;
+    return { success: true, metric: resolved, label: METRICS[resolved].label };
   },
 
   setYear(year) {
