@@ -33,8 +33,15 @@ const LANDMARKS = [
 // =============================================================
 // 4. DATA LAYER PATHS
 // =============================================================
-const CENSUS_GEOJSON_PATH = 'data/chapin-area-tracts.geojson';
-const PLACES_GEOJSON_PATH = 'data/chapin-places.geojson';
+const CENSUS_GEOJSON_PATH    = 'data/chapin-area-tracts.geojson';
+const PLACES_GEOJSON_PATH    = 'data/chapin-places.geojson';
+const CINEMATIC_SHAPES_PATH  = 'data/chapin-cinematic-shapes.geojson';
+
+// Bounding box of the Greater Chapin union (computed in compute-chapin-union.py)
+const GREATER_CHAPIN_BOUNDS = [
+  [-81.437, 34.063],  // SW corner [lng, lat]
+  [-81.147, 34.239],  // NE corner
+];
 
 // =============================================================
 // 5. METRICS — each one defines its own choropleth + legend
@@ -383,7 +390,49 @@ map.on('load', async () => {
     console.error('Place layer failed:', err);
   }
 
-  // -------- 7d. Landmark pins --------
+  // -------- 7d. Cinematic clip shapes (inverted mask + Greater Chapin glow) --------
+  try {
+    map.addSource('chapin-cinematic', {
+      type: 'geojson',
+      data: CINEMATIC_SHAPES_PATH,
+    });
+
+    // Inverted mask — covers everything OUTSIDE Greater Chapin in dark space
+    map.addLayer({
+      id: 'cinematic-mask',
+      type: 'fill',
+      source: 'chapin-cinematic',
+      filter: ['==', ['get', 'kind'], 'inverted_mask'],
+      slot: 'top',
+      layout: { visibility: 'none' },
+      paint: {
+        'fill-color': '#05050a',
+        'fill-opacity': 0.96,
+      },
+    });
+
+    // Greater Chapin glow border — warm gold edge so the area "lights up"
+    map.addLayer({
+      id: 'cinematic-glow',
+      type: 'line',
+      source: 'chapin-cinematic',
+      filter: ['==', ['get', 'kind'], 'greater_chapin_union'],
+      slot: 'top',
+      layout: { visibility: 'none' },
+      paint: {
+        'line-color': '#e8c87a',
+        'line-width': 3,
+        'line-blur': 2,
+        'line-opacity': 0.9,
+      },
+    });
+
+    console.log('✦  Cinematic clip shapes loaded.');
+  } catch (err) {
+    console.error('Cinematic shapes failed:', err);
+  }
+
+  // -------- 7e. Landmark pins --------
   LANDMARKS.forEach((landmark) => {
     const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
       <div class="marker-popup">
@@ -518,7 +567,16 @@ if (cycleStyleBtn) {
 }
 
 // =============================================================
-// 12. CINEMATIC MODE — Chapin floating in space
+// 12. CINEMATIC MODE — Greater Chapin floating in space
+// -------------------------------------------------------------
+// Toggling ON:
+//   - Inverted mask covers everything OUTSIDE Greater Chapin
+//   - Gold glow border lights up the Greater Chapin shape
+//   - Map fits the Greater Chapin bounding box
+//   - Globe projection + space fog + stars for the surrounding void
+//   - UI dims so the map is the focal point
+// All data layers (choropleth, time slider, places) keep working
+// inside the Greater Chapin shape.
 // =============================================================
 let cinematicMode = false;
 const cinematicBtn = document.getElementById('toggleCinematic');
@@ -526,25 +584,53 @@ if (cinematicBtn) {
   cinematicBtn.addEventListener('click', (e) => {
     cinematicMode = !cinematicMode;
     document.body.classList.toggle('cinematic', cinematicMode);
+
     if (cinematicMode) {
-      // Globe projection + space fog + dark style
+      // 1. Show the clip layers (mask + glow border)
+      if (map.getLayer('cinematic-mask'))  map.setLayoutProperty('cinematic-mask',  'visibility', 'visible');
+      if (map.getLayer('cinematic-glow'))  map.setLayoutProperty('cinematic-glow',  'visibility', 'visible');
+
+      // 2. Globe projection + space fog + stars
       try { map.setProjection('globe'); } catch (err) {}
       try {
         map.setFog({
-          'color': 'rgba(10, 10, 14, 1)',
-          'high-color': '#0a0a14',
-          'space-color': '#000000',
-          'horizon-blend': 0.04,
-          'star-intensity': 0.85,
+          'color':            'rgba(8, 8, 12, 1)',
+          'high-color':       '#0a0a14',
+          'space-color':      '#000000',
+          'horizon-blend':    0.04,
+          'star-intensity':   1.0,
         });
       } catch (err) {}
-      // Tilt up dramatically for the planet-from-orbit feel
-      map.easeTo({ pitch: 65, bearing: 0, duration: 2400, essential: true });
+
+      // 3. Fly to fit Greater Chapin in viewport with dramatic tilt
+      map.fitBounds(GREATER_CHAPIN_BOUNDS, {
+        padding: { top: 80, bottom: 120, left: 80, right: 80 },
+        pitch: 55,
+        bearing: -15,
+        duration: 2400,
+        essential: true,
+      });
+
       e.target.textContent = '✦ Exit cinematic';
     } else {
+      // Hide the clip layers
+      if (map.getLayer('cinematic-mask')) map.setLayoutProperty('cinematic-mask', 'visibility', 'none');
+      if (map.getLayer('cinematic-glow')) map.setLayoutProperty('cinematic-glow', 'visibility', 'none');
+
+      // Reset projection + fog
       try { map.setProjection('mercator'); } catch (err) {}
       try { map.setFog(null); } catch (err) {}
-      map.easeTo({ pitch: DEFAULT_PITCH, bearing: DEFAULT_BEARING, duration: 1600, essential: true });
+
+      // Reset view
+      map.easeTo({
+        center: CHAPIN_CENTER,
+        zoom: DEFAULT_ZOOM,
+        pitch: DEFAULT_PITCH,
+        bearing: DEFAULT_BEARING,
+        duration: 1800,
+        essential: true,
+      });
+
       e.target.textContent = '✦ Cinematic';
     }
   });
