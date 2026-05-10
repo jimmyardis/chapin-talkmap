@@ -338,11 +338,12 @@ html, body {
   100% { transform: scale(1.45); opacity: 0;   }
 }
 
-/* ---------- Census legend (bottom-right) ---------- */
+/* ---------- Census legend (bottom-LEFT) ---------- */
 .legend {
   position: absolute;
-  bottom: 100px;
-  right: 24px;
+  bottom: 56px;       /* sits above attribution */
+  left: 24px;
+  right: auto;
   z-index: 10;
   width: 240px;
   padding: 14px 16px 12px;
